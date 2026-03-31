@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "streams": {
+      "title": "Stream",
+      "description": "Metadata for a livestream or video playback",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "streamerId": { "type": "string" },
+        "streamerName": { "type": "string" },
+        "status": { "type": "string", "enum": ["live", "offline", "scheduled"] },
+        "type": { "type": "string", "enum": ["live", "video"] },
+        "videoUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "viewerCount": { "type": "integer" },
+        "inviteCode": { "type": "string" }
+      },
+      "required": ["title", "streamerId", "status", "type", "inviteCode"]
+    },
+    "messages": {
+      "title": "Message",
+      "description": "Chat message in a stream",
+      "type": "object",
+      "properties": {
+        "streamId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["streamId", "userName", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/streams/{streamId}": {
+      "schema": "streams",
+      "description": "Main stream data"
+    },
+    "/streams/{streamId}/messages/{messageId}": {
+      "schema": "messages",
+      "description": "Chat messages for a specific stream"
+    }
+  }
+}

@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidStream(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.streamerId is string &&
+             data.status in ['live', 'offline', 'scheduled'] &&
+             data.type in ['live', 'video'] &&
+             data.inviteCode is string;
+    }
+
+    function isValidMessage(data) {
+      return data.streamId is string &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() < 50 &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 500;
+    }
+
+    // Streams collection
+    match /streams/{streamId} {
+      // Anyone with the invite code can read (we'll implement this by checking the document exists)
+      // In a real private system, we might check the inviteCode in the query, 
+      // but Firestore rules are filters, not queries. 
+      // For "private by link", we allow read if the user knows the ID.
+      allow read: if true; 
+      
+      // Only authenticated streamers can create/update their own streams
+      allow create: if isAuthenticated() && isValidStream(request.resource.data) && request.resource.data.streamerId == request.auth.uid;
+      allow update: if isAuthenticated() && isValidStream(request.resource.data) && resource.data.streamerId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.streamerId == request.auth.uid;
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if isValidMessage(request.resource.data);
+        // No updates or deletes for chat messages in this simple version
+        allow update, delete: if false;
+      }
+    }
+  }
+}

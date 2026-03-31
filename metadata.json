@@ -1,0 +1,5 @@
+{
+  "name": "WeStream",
+  "description": "Private livestream platform for invited viewers only. Stream live or upload videos privately.",
+  "requestFramePermissions": ["camera", "microphone"]
+}
