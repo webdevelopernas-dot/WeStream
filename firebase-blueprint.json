@@ -29,6 +29,20 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["streamId", "userName", "text", "timestamp"]
+    },
+    "destinations": {
+      "title": "Stream Destination",
+      "description": "RTMP destination for multi-streaming",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "platform": { "type": "string", "enum": ["youtube", "facebook", "custom"] },
+        "name": { "type": "string" },
+        "rtmpUrl": { "type": "string" },
+        "streamKey": { "type": "string" },
+        "enabled": { "type": "boolean" }
+      },
+      "required": ["userId", "platform", "rtmpUrl", "streamKey"]
     }
   },
   "firestore": {
@@ -39,6 +53,10 @@
     "/streams/{streamId}/messages/{messageId}": {
       "schema": "messages",
       "description": "Chat messages for a specific stream"
+    },
+    "/users/{userId}/destinations/{destId}": {
+      "schema": "destinations",
+      "description": "User's multi-stream destinations"
     }
   }
 }

@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Video, Upload, Link as LinkIcon, Trash2, Users, Clock, Play, StopCircle, Check, Copy } from 'lucide-react';
+import { Plus, Video, Upload, Link as LinkIcon, Trash2, Users, Clock, Play, StopCircle, Check, Copy, Globe } from 'lucide-react';
 import { auth, db, storage, collection, addDoc, onSnapshot, query, where, orderBy, deleteDoc, doc, updateDoc, serverTimestamp, ref, uploadBytes, getDownloadURL } from '../firebase';
-import { Stream } from '../types';
+import { Stream, Destination } from '../types';
 import { useNavigate } from 'react-router-dom';
 import StreamPlayer from '../components/StreamPlayer';
+import DestinationsManager from '../components/DestinationsManager';
 
 export default function Dashboard() {
   const [streams, setStreams] = useState<Stream[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [isLive, setIsLive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [activeStream, setActiveStream] = useState<Stream | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const navigate = useNavigate();
 
   const user = auth.currentUser;
@@ -25,13 +26,13 @@ export default function Dashboard() {
       return;
     }
 
-    const q = query(
+    const qStreams = query(
       collection(db, 'streams'),
       where('streamerId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeStreams = onSnapshot(qStreams, (snapshot) => {
       const s = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -39,8 +40,22 @@ export default function Dashboard() {
       setStreams(s);
     });
 
-    return () => unsubscribe();
+    const qDests = query(collection(db, `users/${user.uid}/destinations`));
+    const unsubscribeDests = onSnapshot(qDests, (snapshot) => {
+      const d = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Destination[];
+      setDestinations(d);
+    });
+
+    return () => {
+      unsubscribeStreams();
+      unsubscribeDests();
+    };
   }, [user]);
+
+  const activeDestinations = destinations.filter(d => d.enabled);
 
   const startLive = async () => {
     if (!user) return;
@@ -203,6 +218,12 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 Live Preview
+                {activeDestinations.length > 0 && (
+                  <span className="ml-2 px-2 py-0.5 bg-orange-500/20 text-orange-500 text-[10px] font-bold uppercase tracking-widest rounded-full border border-orange-500/20 flex items-center gap-1">
+                    <Globe size={10} />
+                    Simulcasting to {activeDestinations.length} platforms
+                  </span>
+                )}
               </h2>
               <div className="aspect-video bg-black rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
                 <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
@@ -228,6 +249,8 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          <DestinationsManager userId={user?.uid || ''} />
 
           <div className="space-y-6">
             <h2 className="text-xl font-bold uppercase tracking-tighter">Past Broadcasts</h2>

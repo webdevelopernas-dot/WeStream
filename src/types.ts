@@ -19,3 +19,13 @@ export interface Message {
   text: string;
   timestamp: any;
 }
+
+export interface Destination {
+  id: string;
+  userId: string;
+  platform: 'youtube' | 'facebook' | 'custom';
+  name: string;
+  rtmpUrl: string;
+  streamKey: string;
+  enabled: boolean;
+}

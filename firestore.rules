@@ -27,10 +27,7 @@ service cloud.firestore {
 
     // Streams collection
     match /streams/{streamId} {
-      // Anyone with the invite code can read (we'll implement this by checking the document exists)
-      // In a real private system, we might check the inviteCode in the query, 
-      // but Firestore rules are filters, not queries. 
-      // For "private by link", we allow read if the user knows the ID.
+      // Anyone with the invite code can read
       allow read: if true; 
       
       // Only authenticated streamers can create/update their own streams
@@ -42,9 +39,13 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if true;
         allow create: if isValidMessage(request.resource.data);
-        // No updates or deletes for chat messages in this simple version
         allow update, delete: if false;
       }
+    }
+
+    // User destinations
+    match /users/{userId}/destinations/{destId} {
+      allow read, write: if isOwner(userId);
     }
   }
 }
